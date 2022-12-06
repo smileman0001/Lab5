@@ -328,8 +328,19 @@ public class CheckConnectYG : MonoBehaviour
 ...
 public TextMeshProUGUI playerName;
 ...
-public void GetLoadSave(){
-        Debug.Log(YandexGame.savesData.score);
+void Start()
+    {
+        if(YandexGame.SDKEnabled == true){
+            GetLoadSave();
+        }
+        
+        shieldList = new List<GameObject>();
+        for (int i = 1; i <= numEnergyShield; i++){
+            GameObject tShieldGo = Instantiate<GameObject>(energyShieldPrefab);
+            tShieldGo.transform.position = new Vector3(0, energyShieldBottomY, 0);
+            tShieldGo.transform.localScale = new Vector3(1*i, 1*i, 1*i);
+            shieldList.Add(tShieldGo);
+        }
         GameObject playerNamePrefabGUI = GameObject.Find("PlayerName");
         playerName = playerNamePrefabGUI.GetComponent<TextMeshProUGUI>();
         playerName.text = YandexGame.playerName;
@@ -337,19 +348,118 @@ public void GetLoadSave(){
 
 ```
 
-21) Скачать и добавить персонажа с сайта www.mixamo.com
+21) Организовать добавление информации в лидерборд
 
-![image](Screenshots/Peledrini.png)
+```cs
+public void DragonEggDestroyed(){
+        // GameObject[] tDragonEggArray = GameObject.FindGameObjectsWithTag("Dragon Egg");
+        // foreach (GameObject tGI in tDragonEggArray){
+        //     Destroy(tGI);
+        // }
+        int shieldIndex = shieldList.Count - 1;
+        GameObject tShieldGo = shieldList[shieldIndex];
+        shieldList.RemoveAt(shieldIndex);
+        Destroy(tShieldGo);
 
-22) Добавить персонажа на сцену 1, распаковать его текстуры, добавить анимацию и контроллер анимации
-23) Добавить Point Light, выставить его перед персонажем
+        if (shieldList.Count == 0) {
+            GameObject scoreGO = GameObject.Find("Score");
+            scoreGT = scoreGO.GetComponent<TextMeshProUGUI>();
+            UserSave(int.Parse(scoreGT.text), YandexGame.savesData.bestScore);
+            YandexGame.NewLeaderboardScores("TopPlayerScore", int.Parse(scoreGT.text));
+            SceneManager.LoadScene("_0Scene");
+            GetLoadSave();
+        }
+    }
 
-![image](Screenshots/Light.png)
+```
 
-24) Собрать и запустить игру
+22) Создать лидерборд в консоли разработчика яндекс игр
 
-![image](Screenshots/Build.png)
+![image](Screenshots/leaderBoard.png)
 
+23) Создать новый раздел канваса с достижениями
+24) Создать лист достижений
+
+![image](Screenshots/achivMenu.png)
+
+25) Добавить достижения в скрипт CheckConnectYG
+
+```cs
+...
+public TextMeshProUGUI achievements;
+...
+public void CheckSDK()
+    {
+        if (YandexGame.auth == true)
+        {
+            Debug.Log("User auth OK");
+        }
+        else
+        {
+            Debug.Log("User not auth");
+            YandexGame.AuthDialog();
+        }
+
+        GameObject scoreGO = GameObject.Find("BestScore");
+        scoreBest = scoreGO.GetComponent<TextMeshProUGUI>();
+        scoreBest.text = "Best Score: " + YandexGame.savesData.bestScore.ToString();
+
+        if(YandexGame.savesData.achivments == null && GameObject.Find("ListAchievements") == null){
+
+        }
+        else{
+            foreach(string value in YandexGame.savesData.achivments){
+                achievements.text = achievements.text + value + Environment.NewLine;
+            }
+        }
+    }
+```
+
+26) Добавить перменную в SavesYG
+
+```cs
+public string[] achivments;
+```
+
+27) Добавить обработчик достижений в DragonPicker.cs
+
+```cs
+public void DragonEggDestroyed(){
+        // GameObject[] tDragonEggArray = GameObject.FindGameObjectsWithTag("Dragon Egg");
+        // foreach (GameObject tGI in tDragonEggArray){
+        //     Destroy(tGI);
+        // }
+        int shieldIndex = shieldList.Count - 1;
+        GameObject tShieldGo = shieldList[shieldIndex];
+        shieldList.RemoveAt(shieldIndex);
+        Destroy(tShieldGo);
+
+        if (shieldList.Count == 0) {
+            GameObject scoreGO = GameObject.Find("Score");
+            scoreGT = scoreGO.GetComponent<TextMeshProUGUI>();
+            var achs = YandexGame.savesData.achivments;
+            achs[0] = "Берги щиты!";
+            UserSave(int.Parse(scoreGT.text), YandexGame.savesData.bestScore, achs);
+            YandexGame.NewLeaderboardScores("TopPlayerScore", int.Parse(scoreGT.text));
+            SceneManager.LoadScene("_0Scene");
+            GetLoadSave();
+        }
+    }
+
+    public void GetLoadSave(){ 
+        
+    }
+
+    public void UserSave(int currentScore, int currentBestScore, string[] currAchiv){
+        YandexGame.savesData.score = currentScore;
+        if(currentScore > currentBestScore)
+        {
+            YandexGame.savesData.bestScore = currentBestScore;
+        }
+        YandexGame.savesData.achivments = currAchiv;
+        YandexGame.SaveProgress();
+    }
+```
 
 ## Задание 2
 ### Описать не менее трех дополнительных функций Яндекс SDK, которые могут быть интегрированы в игру.
